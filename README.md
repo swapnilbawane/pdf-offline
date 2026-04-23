@@ -29,14 +29,6 @@ So I built a lightweight, offline solution that runs locally in the browser.
 
 ---
 
-## 🖼️ How it looks
-
-> Add your screenshot or GIF here for better clarity
-> Example:
-> ![Demo Screenshot](./demo.png)
-
----
-
 ## ⚙️ Tech Stack
 
 * Python

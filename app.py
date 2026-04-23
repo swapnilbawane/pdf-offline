@@ -22,14 +22,19 @@ def merge():
     writer = PdfWriter()
     writer.strict = False
 
+    failed_files = []
+
     for file in files:
         filename = str(uuid.uuid4()) + ".pdf"
         filepath = os.path.join(UPLOAD_FOLDER, filename)
         file.save(filepath)
 
-        reader = PdfReader(filepath)   # ✅ inside loop
-        for page in reader.pages:
-            writer.add_page(page)
+        try:
+            reader = PdfReader(filepath)
+            for page in reader.pages:
+                writer.add_page(page)
+        except:
+            failed_files.append(file.filename)
 
     output_path = os.path.join(UPLOAD_FOLDER, "merged.pdf")
     with open(output_path, "wb") as f:

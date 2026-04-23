@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PDF Stitcher</title>
+</head>
+<body>
+
+<h2>PDF Stitcher (Offline)</h2>
+
+<input type="file" id="fileInput" multiple><br><br>
+
+<button onclick="document.getElementById('fileInput').click()">
+    Add More PDFs
+</button><br><br>
+
+<div id="dropZone" style="
+    width: 300px;
+    height: 120px;
+    border: 2px dashed #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+">
+    Drag & Drop PDFs Here
+</div>
+
+<ul id="fileList"></ul>
+
+<input type="text" id="outputName" placeholder="Enter output file name"><br><br> 
+<!-- added new code v2 adds file name before merging -->
+
+<button onclick="clearAll()">Clear All</button><br><br>
+
+<button onclick="mergeFiles()">Merge PDFs</button>
+
+<script>
+let filesArray = [];
+
+const input = document.getElementById("fileInput");
+const list = document.getElementById("fileList");
+
+input.addEventListener("change", () => {
+    const newFiles = Array.from(input.files);
+
+    newFiles.forEach(file => {
+        // Avoid duplicate filenames (optional safety)
+        if (!filesArray.some(f => f.name === file.name)) {
+            filesArray.push(file);
+        }
+    });
+
+    renderList();
+
+    // Reset input so same file can be added again if needed
+    input.value = "";
+});
+
+const dropZone = document.getElementById("dropZone");
+
+dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.style.background = "#eee";
+});
+
+dropZone.addEventListener("dragleave", () => {
+    dropZone.style.background = "";
+});
+
+dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.style.background = "";
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+
+    droppedFiles.forEach(file => {
+        if (file.type === "application/pdf") {
+            if (!filesArray.some(f => f.name === file.name)) {
+                filesArray.push(file);
+            }
+        }
+    });
+
+    renderList();
+});
+
+function renderList() {
+    list.innerHTML = "";
+
+    filesArray.forEach((file, index) => {
+        const li = document.createElement("li");
+
+        li.innerHTML = `
+            ${index + 1}. ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)
+            <button onclick="moveUp(${index})">⬆</button>
+            <button onclick="moveDown(${index})">⬇</button>
+            <button onclick="removeFile(${index})">❌</button>
+        `;
+
+        list.appendChild(li);
+    });
+}
+
+function moveUp(i) {
+    if (i === 0) return;
+    [filesArray[i], filesArray[i - 1]] = [filesArray[i - 1], filesArray[i]];
+    renderList();
+}
+
+function moveDown(i) {
+    if (i === filesArray.length - 1) return;
+    [filesArray[i], filesArray[i + 1]] = [filesArray[i + 1], filesArray[i]];
+    renderList();
+}
+
+function removeFile(i) {
+    filesArray.splice(i, 1);
+    renderList();
+}
+
+function mergeFiles() {
+const nameInput = document.getElementById("outputName").value || "merged"; //adding names v2 
+
+    if (filesArray.length === 0) {
+        alert("No files selected");
+        return;
+    }
+
+    const formData = new FormData();
+
+    filesArray.forEach(file => {
+        formData.append("pdfs", file);
+    });
+
+    fetch("/merge", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.blob())
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = nameInput + ".pdf";
+        a.click();
+    });
+}
+
+function clearAll() {
+    filesArray = [];
+    renderList();
+
+    // also clear file input (important)
+    document.getElementById("fileInput").value = "";
+
+    // clear output name (optional but useful)
+    document.getElementById("outputName").value = "";
+}
+
+</script>
+
+</body>
+</html>
